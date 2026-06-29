@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>코냥이와 친구들의 오피스 사다리타기</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gmarket+Sans:wght@300;500;700&display=swap');
+        body {
+            font-family: 'Gmarket Sans', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-slate-700 via-slate-800 to-indigo-950 text-white shadow-md py-4 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">🪜</span>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+                        오피스 사다리타기 <span class="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full font-normal">Breaktime</span>
+                    </h1>
+                    <p class="text-xs text-slate-300">코냥이와 직장 동료들의 지갑을 건 한판 승부!</p>
+                </div>
+            </div>
+            <!-- Character Quick Intro (Dynamic Indicator) -->
+            <div class="flex items-center gap-2 bg-slate-800/80 p-2 rounded-lg border border-slate-700 text-xs">
+                <span class="font-bold text-indigo-300">현재 탑승 인원:</span>
+                <span id="header-member-count" class="font-bold text-white">5명</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Controller Panel (4 Cols) -->
+        <section class="lg:col-span-4 flex flex-col justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="space-y-6">
+                <div class="border-b pb-3">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-700">
+                        ⚙️ 간편 설정
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">사우를 추가/삭제하고 커피를 살 인원을 정하세요.</p>
+                </div>
+                
+                <!-- Add Member Input Box -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2.5">
+                    <h3 class="text-xs font-bold text-slate-500">➕ 새 사우 영입 (최대 10명)</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="input-new-member" placeholder="사우 이름 입력 (예: 토과장)" max-length="8" class="flex-grow bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                        <button id="btn-add-member" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs transition flex-shrink-0">
+                            영입
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Lineup Dashboard Visualizer -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-2.5">
+                        <h3 class="text-xs font-bold text-slate-500">👥 사다리 승선 사우</h3>
+                        <button id="btn-shuffle-members" class="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm flex items-center gap-1 transition">
+                            🎲 위치 섞기
+                        </button>
+                    </div>
+                    <div id="member-dashboard" class="grid grid-cols-4 sm:grid-cols-5 gap-1.5 text-center">
+                        <!-- Cards dynamically rendered in JS with delete buttons -->
+                    </div>
+                </div>
+
+                <!-- Win/Lose Ratio setup (Coffee targets) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="win-count" class="text-xs font-bold text-rose-600">☕ 커피당첨자 인원수</label>
+                        <span id="win-count-val" class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded text-xs font-bold">1명</span>
+                    </div>
+                    <input type="range" id="win-count" min="1" max="4" value="1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-600">
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-2">
+                        <span>커피 살 확률: <span id="win-rate-pct" class="font-bold text-rose-500">20</span>%</span>
+                        <span>나머지는 자동으로 '🍀 통과' 처리</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="pt-6 border-t mt-6 space-y-3">
+                <button id="btn-generate" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl shadow transition duration-200 flex items-center justify-center gap-2 text-sm">
+                    ✨ 사다리 재건설하기
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-run-all" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-3 rounded-lg shadow text-xs transition duration-200">
+                        ⚡ 전체 출발!
+                    </button>
+                    <button id="btn-reset-runs" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2.5 px-3 rounded-lg text-xs transition">
+                        🔄 다시 타기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Game Board Panel (8 Cols) -->
+        <section class="lg:col-span-8 flex flex-col bg-slate-900 text-white p-4 sm:p-6 rounded-2xl shadow-xl border border-slate-950 relative overflow-hidden">
+            <!-- Background Accent Grid -->
+            <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none"></div>
+            
+            <div class="relative z-10 flex flex-col h-full min-h-[500px]">
+                
+                <!-- Game Board Top Controls -->
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-2 border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <h2 class="text-md font-semibold tracking-tight text-slate-200">사다리 현황판</h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="text-xs text-slate-400 flex items-center gap-1.5">
+                            🏎️ 속도:
+                            <select id="run-speed" class="bg-slate-800 text-white border border-slate-700 rounded px-1.5 py-0.5 text-xs focus:outline-none">
+                                <option value="slow">느리게</option>
+                                <option value="normal" selected>보통</option>
+                                <option value="fast">빠르게</option>
+                            </select>
+                        </label>
+                        <button id="btn-mute" class="text-slate-400 hover:text-slate-200 transition text-sm" title="소리 켜기/끄기">
+                            🔊 소리 켬
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Guide Tip -->
+                <p class="text-xs text-slate-400 mb-3 text-center bg-slate-800/40 py-1.5 rounded border border-slate-800">
+                    💡 <span class="text-indigo-400 font-semibold">각 캐릭터 아바타</span>를 클릭하여 개인별로 하나씩 내려보낼 수 있습니다!
+                </p>
+
+                <!-- Canvas & Wrapper -->
+                <div id="ladder-wrapper" class="flex-grow relative flex flex-col justify-between items-center w-full bg-slate-950/80 rounded-xl border border-slate-800 p-2 overflow-x-auto">
+                    <!-- Inner Container with minimum width for scalability -->
+                    <div id="ladder-container" class="relative w-full min-w-[550px] h-[480px]">
+                        <!-- Canvas is sized dynamically inside JS -->
+                        <canvas id="ladder-canvas" class="absolute top-0 left-0 w-full h-full pointer-events-auto"></canvas>
+                        
+                        <!-- Top Avatars Container -->
+                        <div id="top-avatars" class="absolute top-0 left-0 w-full flex justify-between px-[5%] pointer-events-none z-20"></div>
+                        
+                        <!-- Bottom Results Text Container -->
+                        <div id="bottom-results" class="absolute bottom-1 left-0 w-full flex justify-between px-[5%] pointer-events-none z-20"></div>
+                    </div>
+                </div>
+
+                <!-- Footer Console / Status Output -->
+                <div class="mt-4 p-3 bg-slate-950/90 rounded-lg border border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                    <div id="status-message" class="text-indigo-300">준비 완료! 사다리를 정비하고 출발 버튼을 눌러보세요.</div>
+                    <div class="flex gap-2">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> 대기중</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-500"></span> 하강중</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 완료</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Custom Result Modal (Alternative to alert) -->
+    <div id="result-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden transform scale-95 transition-transform duration-300" id="modal-content">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-slate-800 to-indigo-900 p-5 text-white flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">☕</span>
+                    <h3 class="font-bold text-lg">오늘의 커피 당첨 결과</h3>
+                </div>
+                <button id="modal-close" class="text-slate-300 hover:text-white text-xl font-bold">&times;</button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <p class="text-slate-500 text-xs mb-4">희비가 엇갈리는 탕비실 회담 결과! 오늘 커피 골든벨을 울리실 주인공은 누구일까요?</p>
+                
+                <!-- Results List -->
+                <div class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1" id="modal-results-list">
+                    <!-- Matches go here -->
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-50 px-6 py-4 flex justify-between gap-3 border-t">
+                <button id="modal-btn-retry" class="flex-grow bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2.5 rounded-xl text-xs transition">
+                    🔄 다시 경기하기
+                </button>
+                <button id="modal-btn-confirm" class="flex-grow bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                    눈물 훔치고 탕비실 가기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Game Logic -->
+    <script>
+        // Predefined Character Pool with unique high-quality SVGs (Supports up to 10+ players)
+        const characterPool = [
+            { id: 'cat', name: '코냥이', color: '#fb923c', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="45" fill="#fed7aa"/><polygon points="20,25 35,5 45,28" fill="#f97316"/><polygon points="80,25 65,5 55,28" fill="#f97316"/><circle cx="35" cy="45" r="5" fill="#1e293b"/><circle cx="65" cy="45" r="5" fill="#1e293b"/><polygon points="48,55 52,55 50,59" fill="#f43f5e"/><path d="M42,65 Q50,70 58,65" fill="none" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/><circle cx="25" cy="55" r="4" fill="#fecdd3" opacity="0.6"/><circle cx="75" cy="55" r="4" fill="#fecdd3" opacity="0.6"/></svg>` },
+            { id: 'donkey', name: '동키', color: '#94a3b8', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="45" fill="#cfd8dc"/><path d="M28,25 L18,2 L32,15 Z" fill="#90a4ae"/><path d="M72,25 L82,2 L68,15 Z" fill="#90a4ae"/><ellipse cx="50" cy="68" rx="20" ry="14" fill="#eceff1"/><circle cx="43" cy="65" r="2.5" fill="#37474f"/><circle cx="57" cy="65" r="2.5" fill="#37474f"/><circle cx="35" cy="42" r="4" fill="#37474f"/><circle cx="65" cy="42" r="4" fill="#37474f"/><path d="M28,42 L42,42 M58,42 L72,42" fill="none" stroke="#1e293b" stroke-width="2" stroke-linecap="round" title="안경"/><circle cx="35" cy="42" r="7" fill="none" stroke="#1e293b" stroke-width="2"/><circle cx="65" cy="42" r="7" fill="none" stroke="#1e293b" stroke-width="2"/></svg>` },
+            { id: 'beaver', name: '비버', color: '#8d6e63', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="45" fill="#bcaaa4"/><ellipse cx="50" cy="68" rx="16" ry="11" fill="#d7ccc8"/><rect x="44" y="65" width="4" height="6" fill="#ffffff" stroke="#3e2723" stroke-width="1"/><rect x="52" y="65" width="4" height="6" fill="#ffffff" stroke="#3e2723" stroke-width="1"/><circle cx="35" cy="44" r="4.5" fill="#3e2723"/><circle cx="65" cy="44" r="4.5" fill="#3e2723"/><ellipse cx="50" cy="54" rx="5" ry="3" fill="#3e2723"/><path d="M43,58 C43,62 57,62 57,58" fill="none" stroke="#3e2723" stroke-width="2"/></svg>` },
+            { id: 'panda', name: '판부장', color: '#64748b', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="45" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/><circle cx="22" cy="22" r="12" fill="#18181b"/><circle cx="78" cy="22" r="12" fill="#18181b"/><ellipse cx="35" cy="48" rx="8" ry="12" fill="#18181b"/><ellipse cx="65" cy="48" rx="8" ry="12" fill="#18181b"/><circle cx="35" cy="45" r="3" fill="#ffffff"/><circle cx="65" cy="45" r="3" fill="#ffffff"/><ellipse cx="50" cy="62" rx="6" ry="4" fill="#18181b"/><path d="M44,70 Q50,74 56,70" fill="none" stroke="#18181b" stroke-width="3" stroke-linecap="round"/><polygon points="45,5 55,5 50,15" fill="#ef4444" opacity="0.8" title="부장님 넥타이핀"/></svg>` },
+            { id: 'sloth', name: '늘보', color: '#a1a1aa', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="45" fill="#d7ccc8"/><ellipse cx="32" cy="48" rx="10" ry="16" fill="#a1887f"/><ellipse cx="68" cy="48" rx="10" ry="16" fill="#a1887f"/><circle cx="34" cy="46" r="4" fill="#1e293b"/><circle cx="66" cy="46" r="4" fill="#1e293b"/><ellipse cx="50" cy="58" rx="5" ry="3.5" fill="#3e2723"/><path d="M45,67 Q50,65 55,67" fill="none" stroke="#1e293b" stroke-width="2" stroke-linecap="round"/><path d="M20,15 Q15,30 25,25" fill="none" stroke="#a1887f" stroke-width="3" stroke-linecap="round"/><path d="M80,15 Q85,30 75,25" fill="none" stroke="#a1887f" stroke-width="3" stroke-linecap="round"/></svg>` },
+            { id: 'rabbit', name: '토끼', color: '#f472b6', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="45" fill="#fce7f3"/><rect x="25" y="-10" width="12" height="40" rx="6" fill="#fbcfe8"/><rect x="63" y="-10" width="12" height="40" rx="6" fill="#fbcfe8"/><circle cx="35" cy="45" r="4.5" fill="#1e293b"/><circle cx="65" cy="45" r="4.5" fill="#1e293b"/><polygon points="47,53 53,53 50,57" fill="#f43f5e"/><circle cx="28" cy="55" r="3" fill="#fda4af" opacity="0.6"/><circle cx="72" cy="55" r="3" fill="#fda4af" opacity="0.6"/><path d="M44,62 Q50,65 56,62" fill="none" stroke="#1e293b" stroke-width="2" stroke-linecap="round"/></svg>` },
+            { id: 'tiger', name: '호랑', color: '#fb923c', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="45" fill="#ffb74d"/><path d="M15,25 L10,5 L30,18" fill="#e65100"/><path d="M85,25 L90,5 L70,18" fill="#e65100"/><circle cx="35" cy="45" r="5" fill="#1e293b"/><circle cx="65" cy="45" r="5" fill="#1e293b"/><ellipse cx="50" cy="56" rx="4" ry="2.5" fill="#1e293b"/><path d="M43,64 Q50,68 57,64" fill="none" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round"/><path d="M15,45 L30,48 M15,50 L28,52" stroke="#1e293b" stroke-width="2"/><path d="M85,45 L70,48 M85,50 L72,52" stroke="#1e293b" stroke-width="2"/></svg>` },
+            { id: 'koala', name: '코알', color: '#cbd5e1', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="20" cy="30" r="16" fill="#94a3b8"/><circle cx="80" cy="30" r="16" fill="#94a3b8"/><circle cx="20" cy="30" r="10" fill="#f1f5f9"/><circle cx="80" cy="30" r="10" fill="#f1f5f9"/><circle cx="50" cy="52" r="38" fill="#cbd5e1"/><circle cx="36" cy="45" r="4" fill="#0f172a"/><circle cx="64" cy="45" r="4" fill="#0f172a"/><ellipse cx="50" cy="55" rx="8" ry="12" fill="#475569"/><ellipse cx="50" cy="74" rx="14" ry="7" fill="#f1f5f9"/><path d="M44,72 Q50,70 56,72" fill="none" stroke="#0f172a" stroke-width="2"/></svg>` },
+            { id: 'monkey', name: '원숭', color: '#b45309', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="45" fill="#8d6e63"/><path d="M22,30 Q10,35 20,50" fill="none" stroke="#d7ccc8" stroke-width="6" stroke-linecap="round"/><path d="M78,30 Q90,35 80,50" fill="none" stroke="#d7ccc8" stroke-width="6" stroke-linecap="round"/><ellipse cx="50" cy="54" rx="34" ry="28" fill="#d7ccc8"/><circle cx="38" cy="44" r="4.5" fill="#3e2723"/><circle cx="62" cy="44" r="4.5" fill="#3e2723"/><ellipse cx="50" cy="56" rx="5" ry="3.5" fill="#3e2723"/><path d="M38,66 Q50,74 62,66" fill="none" stroke="#3e2723" stroke-width="3" stroke-linecap="round"/></svg>` },
+            { id: 'dog', name: '댕댕', color: '#fcd34d', svg: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="45" fill="#ffecb3"/><path d="M22,25 C14,25 10,48 22,48" fill="#795548"/><path d="M78,25 C86,25 90,48 78,48" fill="#795548"/><circle cx="36" cy="42" r="4" fill="#3e2723"/><circle cx="64" cy="42" r="4" fill="#3e2723"/><ellipse cx="50" cy="52" rx="6" ry="4.5" fill="#3e2723"/><path d="M44,60 Q50,64 56,60" fill="none" stroke="#3e2723" stroke-width="2.5"/><ellipse cx="50" cy="65" rx="4" ry="6" fill="#ff1744"/></svg>` }
+        ];
+
+        // Dynamic Lineup Order representing active members (starts with initial 5)
+        let currentLineup = [
+            { id: 'cat', name: '코냥이', color: '#fb923c', svg: characterPool[0].svg },
+            { id: 'donkey', name: '동키', color: '#94a3b8', svg: characterPool[1].svg },
+            { id: 'beaver', name: '비버', color: '#8d6e63', svg: characterPool[2].svg },
+            { id: 'panda', name: '판부장', color: '#64748b', svg: characterPool[3].svg },
+            { id: 'sloth', name: '늘보', color: '#a1a1aa', svg: characterPool[4].svg }
+        ];
+
+        // Audio Synthesizer
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playTone(freq, type, duration, vol) {
+                if (this.muted) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {
+                    console.log('Web Audio Error:', e);
+                }
+            }
+            tick() {
+                this.playTone(880, 'sine', 0.05, 0.08);
+            }
+            turn() {
+                this.playTone(1200, 'triangle', 0.08, 0.12);
+            }
+            success() {
+                const now = this.ctx ? this.ctx.currentTime : 0;
+                this.playTone(523.25, 'sine', 0.15, 0.15); // C5
+                setTimeout(() => this.playTone(659.25, 'sine', 0.15, 0.15), 150); // E5
+                setTimeout(() => this.playTone(783.99, 'sine', 0.15, 0.15), 300); // G5
+                setTimeout(() => this.playTone(1046.50, 'sine', 0.4, 0.2), 450); // C6
+            }
+            fail() {
+                this.playTone(293.66, 'sawtooth', 0.2, 0.15); // D4
+                setTimeout(() => this.playTone(220.00, 'sawtooth', 0.4, 0.15), 200); // A3
+            }
+            cheer() {
+                this.success();
+                setTimeout(() => this.success(), 800);
+            }
+        }
+
+        const sound = new SoundFX();
+
+        // Mute toggle
+        const btnMute = document.getElementById('btn-mute');
+        btnMute.addEventListener('click', () => {
+            sound.muted = !sound.muted;
+            if (sound.muted) {
+                btnMute.textContent = '🔇 소리 끔';
+                btnMute.classList.replace('text-slate-400', 'text-rose-400');
+            } else {
+                btnMute.textContent = '🔊 소리 켬';
+                btnMute.classList.replace('text-rose-400', 'text-slate-400');
+                sound.init();
+                sound.playTone(440, 'sine', 0.1, 0.1);
+            }
+        });
+
+        // Dynamic State variables
+        let numPlayers = 5; 
+        let numWins = 1; 
+        let activePlayers = [];
+        
+        let paths = []; 
+        let horizontalBridges = []; 
+        let runnersState = []; 
+        let animationFrameId = null;
+        let isRunningAll = false;
+
+        // UI Controls
+        const sliderWinCount = document.getElementById('win-count');
+        const valWinCount = document.getElementById('win-count-val');
+        const winRatePct = document.getElementById('win-rate-pct');
+        
+        const canvas = document.getElementById('ladder-canvas');
+        const ctx = canvas.getContext('2d');
+        const topAvatarsDiv = document.getElementById('top-avatars');
+        const bottomResultsDiv = document.getElementById('bottom-results');
+        const statusMessage = document.getElementById('status-message');
+        const selectSpeed = document.getElementById('run-speed');
+
+        const resultModal = document.getElementById('result-modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalResultsList = document.getElementById('modal-results-list');
+        const modalClose = document.getElementById('modal-close');
+        const modalBtnConfirm = document.getElementById('modal-btn-confirm');
+        const modalBtnRetry = document.getElementById('modal-btn-retry');
+
+        // STEAMING_CHUNK: Setting up configuration dynamically...
+        function updateConfigLimits() {
+            numPlayers = currentLineup.length;
+            document.getElementById('header-member-count').textContent = `${numPlayers}명`;
+
+            // Max winners must be less than total players (at least 1 loser)
+            const maxWinsPossible = Math.max(1, numPlayers - 1);
+            sliderWinCount.max = maxWinsPossible;
+
+            if (parseInt(sliderWinCount.value) > maxWinsPossible) {
+                sliderWinCount.value = maxWinsPossible;
+            }
+
+            numWins = parseInt(sliderWinCount.value);
+            valWinCount.textContent = `${numWins}명`;
+
+            const percent = Math.round((numWins / numPlayers) * 100);
+            winRatePct.textContent = percent;
+        }
+
+        // Generate Player list data (Only '☕ 커피당첨' and '🍀 통과')
+        function regeneratePlayersAndResults() {
+            updateConfigLimits();
+            const newPlayers = [];
+            
+            // Generate active players with the current lineups
+            for (let i = 0; i < numPlayers; i++) {
+                let characterObj = currentLineup[i];
+                let name = characterObj.name;
+
+                // Prepare results. Winner results first, then passes.
+                let resultText = (i < numWins) ? '☕ 커피당첨' : '🍀 통과';
+
+                newPlayers.push({
+                    index: i,
+                    name: name,
+                    characterObj: characterObj,
+                    result: resultText,
+                    state: 'idle'
+                });
+            }
+
+            // Shuffle results positions to make the ladder random and fair
+            const resultsOnly = newPlayers.map(p => p.result);
+            for (let i = resultsOnly.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [resultsOnly[i], resultsOnly[j]] = [resultsOnly[j], resultsOnly[i]];
+            }
+            newPlayers.forEach((p, idx) => {
+                p.result = resultsOnly[idx];
+            });
+
+            activePlayers = newPlayers;
+            renderMemberDashboard();
+        }
+
+        // Render the quick-look visualizer with DELETE functionality
+        function renderMemberDashboard() {
+            const dashboard = document.getElementById('member-dashboard');
+            dashboard.innerHTML = '';
+            
+            currentLineup.forEach((char, index) => {
+                const card = document.createElement('div');
+                card.className = "relative bg-white p-2 rounded-lg border border-slate-200 flex flex-col items-center justify-center transition-all duration-300 transform hover:scale-105 group";
+                
+                // Only allow deletion if there are more than 2 members
+                let deleteBtnHtml = '';
+                if (currentLineup.length > 2) {
+                    deleteBtnHtml = `
+                        <button onclick="removeMember(${index})" class="absolute -top-1 -right-1 bg-rose-500 hover:bg-rose-600 text-white rounded-full w-4 h-4 text-[10px] font-bold flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition duration-150" title="멤버 제거">
+                            &times;
+                        </button>
+                    `;
+                }
+
+                card.innerHTML = `
+                    ${deleteBtnHtml}
+                    <div class="w-7 h-7">
+                        ${char.svg}
+                    </div>
+                    <p class="text-[9px] font-bold text-slate-600 mt-1 truncate max-w-full">${char.name}</p>
+                `;
+                dashboard.appendChild(card);
+            });
+        }
+
+        // Add Member Trigger
+        document.getElementById('btn-add-member').addEventListener('click', addMemberFromInput);
+        document.getElementById('input-new-member').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addMemberFromInput();
+        });
+
+        function addMemberFromInput() {
+            if (currentLineup.length >= 10) {
+                showStatus('사다리는 최대 10명까지만 탑승 가능합니다!', 'rose');
+                sound.playTone(300, 'sawtooth', 0.15, 0.1);
+                return;
+            }
+
+            const input = document.getElementById('input-new-member');
+            let name = input.value.trim();
+
+            // If name is empty, assign a random name from the unused character pool
+            if (!name) {
+                const usedNames = currentLineup.map(c => c.name);
+                const unusedTemplates = characterPool.filter(c => !usedNames.includes(c.name));
+                const template = unusedTemplates.length > 0 
+                    ? unusedTemplates[Math.floor(Math.random() * unusedTemplates.length)] 
+                    : characterPool[Math.floor(Math.random() * characterPool.length)];
+                name = template.name + (currentLineup.length + 1);
+            }
+
+            // Pick a character avatar that is not currently highly duplicated, or pick randomly
+            const usedIds = currentLineup.map(c => c.id);
+            let chosenTemplate = characterPool.find(c => !usedIds.includes(c.id));
+            if (!chosenTemplate) {
+                chosenTemplate = characterPool[Math.floor(Math.random() * characterPool.length)];
+            }
+
+            // Add to lineup
+            currentLineup.push({
+                id: chosenTemplate.id,
+                name: name,
+                color: chosenTemplate.color,
+                svg: chosenTemplate.svg
+            });
+
+            input.value = '';
+            sound.init();
+            sound.playTone(587.33, 'sine', 0.15, 0.12); // D5 cheerful note
+            
+            regeneratePlayersAndResults();
+            generateLadderStructure();
+            showStatus(`새로운 동료 [${name}] 영입 완료!`, 'indigo');
+        }
+
+        // Expose removeMember globally
+        window.removeMember = function(index) {
+            if (currentLineup.length <= 2) {
+                showStatus('최소 2명의 멤버가 필요합니다!', 'rose');
+                return;
+            }
+
+            const removedName = currentLineup[index].name;
+            currentLineup.splice(index, 1);
+            
+            sound.init();
+            sound.playTone(349.23, 'triangle', 0.15, 0.1); // F4 mellow note
+
+            regeneratePlayersAndResults();
+            generateLadderStructure();
+            showStatus(`[${removedName}] 사우가 하차하였습니다.`, 'slate');
+        };
+
+        sliderWinCount.addEventListener('input', () => {
+            regeneratePlayersAndResults();
+            generateLadderStructure();
+        });
+
+        document.getElementById('btn-generate').addEventListener('click', () => {
+            regeneratePlayersAndResults(); // Reshuffle bottom results on manual rebuild
+            generateLadderStructure();
+            sound.playTone(520, 'triangle', 0.15, 0.1);
+            showStatus('새로운 사무실 사다리 지도가 그려졌습니다.', 'indigo');
+        });
+
+        function generateLadderStructure() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            runnersState = activePlayers.map((p, idx) => ({
+                colIndex: idx,
+                pathProgress: 0,
+                currentPathIndex: 0,
+                state: 'idle',
+                traceY: 0,
+                color: p.characterObj.color
+            }));
+            
+            isRunningAll = false;
+
+            // Generate Horizontal Bridges
+            horizontalBridges = [];
+            const numLevels = 10;
+            
+            for (let level = 1; level < numLevels; level++) {
+                const yPercent = (level / numLevels) * 100;
+                const levelBridges = [];
+                for (let col = 0; col < numPlayers - 1; col++) {
+                    if (Math.random() < 0.65) {
+                        if (col > 0 && levelBridges.includes(col - 1)) {
+                            continue;
+                        }
+                        horizontalBridges.push({
+                            yPercent: yPercent + (Math.random() * 2 - 1) * 2,
+                            leftCol: col
+                        });
+                        levelBridges.push(col);
+                    }
+                }
+            }
+
+            if (horizontalBridges.length === 0) {
+                for (let col = 0; col < numPlayers - 1; col++) {
+                    horizontalBridges.push({
+                        yPercent: 30 + col * 12,
+                        leftCol: col
+                    });
+                }
+            }
+
+            horizontalBridges.sort((a, b) => a.yPercent - b.yPercent);
+
+            calculatePaths();
+            resizeCanvas();
+            drawLadder();
+            updateScreenNodes();
+        }
+
+        function calculatePaths() {
+            paths = [];
+            for (let startCol = 0; startCol < numPlayers; startCol++) {
+                const playerPath = [];
+                let currentCol = startCol;
+                let currentY = 0;
+                
+                playerPath.push({ xCol: currentCol, yPercent: 0 });
+                let remainingBridges = [...horizontalBridges];
+
+                while (currentY < 100) {
+                    let nextBridge = null;
+
+                    for (let i = 0; i < remainingBridges.length; i++) {
+                        const b = remainingBridges[i];
+                        if (b.yPercent > currentY && (b.leftCol === currentCol || b.leftCol === currentCol - 1)) {
+                            nextBridge = b;
+                            break;
+                        }
+                    }
+
+                    if (nextBridge) {
+                        playerPath.push({ xCol: currentCol, yPercent: nextBridge.yPercent });
+                        const targetCol = (nextBridge.leftCol === currentCol) ? currentCol + 1 : currentCol - 1;
+                        playerPath.push({ xCol: targetCol, yPercent: nextBridge.yPercent });
+                        currentCol = targetCol;
+                        currentY = nextBridge.yPercent;
+                    } else {
+                        playerPath.push({ xCol: currentCol, yPercent: 100 });
+                        currentY = 100;
+                    }
+                }
+
+                paths.push(playerPath);
+            }
+        }
+
+        function getCanvasCoords(colIndex, yPercent) {
+            const padX = canvas.width * 0.08;
+            const useableW = canvas.width - (padX * 2);
+            const colSpacing = numPlayers > 1 ? useableW / (numPlayers - 1) : useableW;
+            
+            const x = padX + (colIndex * colSpacing);
+            const padY = 55; 
+            const useableH = canvas.height - (padY * 2);
+            const y = padY + (yPercent / 100 * useableH);
+
+            return { x, y };
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.parentNode.getBoundingClientRect();
+            canvas.width = Math.max(550, rect.width);
+            canvas.height = 440;
+        }
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            drawLadder();
+        });
+
+        function drawLadder() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetY = 2;
+
+            // Draw Vertical Poles
+            for (let col = 0; col < numPlayers; col++) {
+                const topPt = getCanvasCoords(col, 0);
+                const botPt = getCanvasCoords(col, 100);
+
+                const grad = ctx.createLinearGradient(topPt.x - 4, 0, topPt.x + 4, 0);
+                grad.addColorStop(0, '#475569');
+                grad.addColorStop(0.5, '#94a3b8');
+                grad.addColorStop(1, '#334155');
+
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.roundRect(topPt.x - 4, topPt.y, 8, botPt.y - topPt.y, 3);
+                ctx.fill();
+            }
+
+            // Draw Horizontal Connection Rails
+            horizontalBridges.forEach(bridge => {
+                if (bridge.leftCol >= numPlayers - 1) return; // Skip out of bound bridges
+                const pLeft = getCanvasCoords(bridge.leftCol, bridge.yPercent);
+                const pRight = getCanvasCoords(bridge.leftCol + 1, bridge.yPercent);
+
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(pLeft.x, pLeft.y);
+                ctx.lineTo(pRight.x, pRight.y);
+                ctx.stroke();
+
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(pLeft.x, pLeft.y);
+                ctx.lineTo(pRight.x, pRight.y);
+                ctx.stroke();
+            });
+
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Trace Active Paths
+            runnersState.forEach((runner, idx) => {
+                if (runner.state === 'running' || runner.state === 'finished') {
+                    drawActivePath(idx, runner);
+                }
+            });
+        }
+
+        function drawActivePath(playerIdx, runner) {
+            const playerPath = paths[playerIdx];
+            if (!playerPath) return;
+            ctx.strokeStyle = runner.color;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.shadowColor = runner.color;
+            ctx.shadowBlur = 8;
+
+            ctx.beginPath();
+            
+            const startPt = getCanvasCoords(playerPath[0].xCol, playerPath[0].yPercent);
+            ctx.moveTo(startPt.x, startPt.y);
+
+            let limitIdx = runner.currentPathIndex;
+            for (let i = 1; i <= limitIdx; i++) {
+                if (i >= playerPath.length) break;
+                const pt = getCanvasCoords(playerPath[i].xCol, playerPath[i].yPercent);
+                ctx.lineTo(pt.x, pt.y);
+            }
+
+            if (runner.state === 'running' && limitIdx < playerPath.length - 1) {
+                const prevNode = playerPath[limitIdx];
+                const nextNode = playerPath[limitIdx + 1];
+                
+                const p0 = getCanvasCoords(prevNode.xCol, prevNode.yPercent);
+                const p1 = getCanvasCoords(nextNode.xCol, nextNode.yPercent);
+
+                const interpX = p0.x + (p1.x - p0.x) * runner.pathProgress;
+                const interpY = p0.y + (p1.y - p0.y) * runner.pathProgress;
+
+                ctx.lineTo(interpX, interpY);
+            }
+
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        function updateScreenNodes() {
+            topAvatarsDiv.innerHTML = '';
+            bottomResultsDiv.innerHTML = '';
+
+            for (let col = 0; col < numPlayers; col++) {
+                const p = activePlayers[col];
+                if (!p) continue;
+                const runner = runnersState[col];
+                const topPt = getCanvasCoords(col, 0);
+                const botPt = getCanvasCoords(col, 100);
+
+                // Top Avatars
+                const avatarBtn = document.createElement('button');
+                avatarBtn.className = `absolute group flex flex-col items-center focus:outline-none pointer-events-auto transition-transform hover:scale-105 duration-150`;
+                avatarBtn.style.left = `${topPt.x}px`;
+                avatarBtn.style.top = `${topPt.y - 50}px`;
+                avatarBtn.style.transform = 'translateX(-50%)';
+                
+                let borderRing = 'border-slate-700 bg-slate-800';
+                if (runner.state === 'running') borderRing = 'border-yellow-500 bg-yellow-950 scale-105 animate-pulse';
+                if (runner.state === 'finished') borderRing = 'border-emerald-500 bg-emerald-950 scale-95 opacity-80';
+
+                avatarBtn.innerHTML = `
+                    <div class="w-11 h-11 rounded-full p-1 border-2 ${borderRing} relative shadow-md transition duration-200">
+                        ${p.characterObj.svg}
+                    </div>
+                    <span class="text-[11px] font-bold mt-1 text-slate-300 max-w-[70px] truncate">${p.name}</span>
+                `;
+                
+                avatarBtn.addEventListener('click', () => {
+                    startSingleRunner(col);
+                });
+                topAvatarsDiv.appendChild(avatarBtn);
+
+                // Bottom Results
+                const resultBox = document.createElement('div');
+                resultBox.className = `absolute flex flex-col items-center justify-center p-2 rounded-xl text-xs font-bold w-[76px] transition-all duration-300 border`;
+                resultBox.style.left = `${botPt.x}px`;
+                resultBox.style.top = `${botPt.y + 10}px`;
+                resultBox.style.transform = 'translateX(-50%)';
+
+                const isMatched = runnersState.some(r => r.state === 'finished' && paths[r.colIndex] && paths[r.colIndex][paths[r.colIndex].length - 1].xCol === col);
+                
+                if (isMatched) {
+                    if (p.result.includes('커피당첨')) {
+                        resultBox.className += ' bg-rose-600 text-white border-rose-400 shadow-md scale-105';
+                    } else {
+                        resultBox.className += ' bg-emerald-600 text-white border-emerald-400 shadow-md scale-105';
+                    }
+                } else {
+                    resultBox.className += ' bg-slate-800/80 text-slate-300 border-slate-700';
+                }
+
+                resultBox.innerHTML = `<span class="truncate max-w-full text-center">${p.result}</span>`;
+                bottomResultsDiv.appendChild(resultBox);
+            }
+        }
+
+        function startSingleRunner(playerIndex) {
+            if (runnersState[playerIndex].state !== 'idle') {
+                return; 
+            }
+            sound.init();
+            sound.tick();
+            
+            runnersState[playerIndex].state = 'running';
+            runnersState[playerIndex].currentPathIndex = 0;
+            runnersState[playerIndex].pathProgress = 0;
+
+            showStatus(`${activePlayers[playerIndex].name}, 하강 시작!`, 'yellow');
+
+            if (!animationFrameId) {
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+            updateScreenNodes();
+        }
+
+        document.getElementById('btn-run-all').addEventListener('click', () => {
+            if (isRunningAll) return;
+            sound.init();
+            isRunningAll = true;
+            
+            let delay = 0;
+            runnersState.forEach((runner, idx) => {
+                if (runner.state === 'idle') {
+                    setTimeout(() => {
+                        if (isRunningAll) startSingleRunner(idx);
+                    }, delay);
+                    delay += 120;
+                }
+            });
+        });
+
+        document.getElementById('btn-reset-runs').addEventListener('click', () => {
+            regeneratePlayersAndResults(); // Reshuffle bottom targets as well for fairness
+            generateLadderStructure();
+            sound.playTone(400, 'triangle', 0.2, 0.1);
+            showStatus('사다리가 초기화되었습니다.', 'slate');
+        });
+
+        function getSpeedFactor() {
+            const spd = selectSpeed.value;
+            if (spd === 'slow') return 0.02;
+            if (spd === 'fast') return 0.08;
+            return 0.04;
+        }
+
+        function gameLoop() {
+            let activeAnimation = false;
+            const speedFactor = getSpeedFactor();
+
+            runnersState.forEach((runner, idx) => {
+                if (runner.state === 'running') {
+                    activeAnimation = true;
+                    runner.pathProgress += speedFactor;
+                    
+                    if (runner.pathProgress >= 1) {
+                        const playerPath = paths[idx];
+                        if (!playerPath) return;
+                        const prevNode = playerPath[runner.currentPathIndex];
+                        const nextNode = playerPath[runner.currentPathIndex + 1];
+
+                        if (prevNode && nextNode && prevNode.xCol !== nextNode.xCol) {
+                            sound.turn();
+                        } else {
+                            sound.tick();
+                        }
+
+                        runner.pathProgress = 0;
+                        runner.currentPathIndex++;
+
+                        if (runner.currentPathIndex >= playerPath.length - 1) {
+                            runner.state = 'finished';
+                            
+                            const finalCol = playerPath[playerPath.length - 1].xCol;
+                            const finalMatch = activePlayers[finalCol] ? activePlayers[finalCol].result : '🍀 통과';
+                            
+                            if (finalMatch.includes('통과')) {
+                                sound.success();
+                                showStatus(`${activePlayers[idx].name}님, 안도의 통과! 🍀`, 'emerald');
+                            } else {
+                                sound.fail();
+                                showStatus(`${activePlayers[idx].name}님, 커피 당첨!! ☕`, 'rose');
+                            }
+                        }
+                    }
+                }
+            });
+
+            drawLadder();
+            updateScreenNodes();
+
+            if (activeAnimation) {
+                animationFrameId = requestAnimationFrame(gameLoop);
+            } else {
+                animationFrameId = null;
+                const allFinished = runnersState.every(r => r.state === 'finished');
+                if (allFinished && isRunningAll) {
+                    isRunningAll = false;
+                    setTimeout(showFinalResultModal, 600);
+                }
+            }
+        }
+
+        function showStatus(text, colorName) {
+            const bar = document.getElementById('status-message');
+            bar.textContent = text;
+            bar.className = `font-semibold text-xs text-${colorName}-400`;
+        }
+
+        function showFinalResultModal() {
+            modalResultsList.innerHTML = '';
+            sound.cheer();
+
+            const finalMatches = runnersState.map((runner, idx) => {
+                const path = paths[idx];
+                const finalCol = path ? path[path.length - 1].xCol : 0;
+                const resultText = activePlayers[finalCol] ? activePlayers[finalCol].result : '🍀 통과';
+                return {
+                    player: activePlayers[idx],
+                    result: resultText
+                };
+            });
+
+            finalMatches.forEach(match => {
+                if (!match.player) return;
+                const card = document.createElement('div');
+                card.className = "flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 shadow-sm";
+                
+                const isCoffee = match.result.includes('커피당첨');
+                const badgeStyle = isCoffee 
+                    ? 'bg-rose-50 text-rose-700 border border-rose-200 font-extrabold animate-pulse' 
+                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-slate-100 p-0.5 border border-slate-200">
+                            ${match.player.characterObj.svg}
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">${match.player.name}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-3 py-1.5 rounded-lg text-xs ${badgeStyle}">
+                            ${match.result}
+                        </span>
+                    </div>
+                `;
+                modalResultsList.appendChild(card);
+            });
+
+            resultModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 50);
+        }
+
+        modalClose.addEventListener('click', closeModal);
+        modalBtnConfirm.addEventListener('click', closeModal);
+        modalBtnRetry.addEventListener('click', () => {
+            closeModal();
+            regeneratePlayersAndResults();
+            generateLadderStructure();
+        });
+
+        function closeModal() {
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                resultModal.classList.add('hidden');
+            }, 150);
+        }
+
+        // Initialize App
+        updateConfigLimits();
+        regeneratePlayersAndResults();
+        generateLadderStructure();
+
+        // Shuffle starting lineup positions
+        document.getElementById('btn-shuffle-members').addEventListener('click', () => {
+            // Shuffle the lineup array
+            for (let i = currentLineup.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentLineup[i], currentLineup[j]] = [currentLineup[j], currentLineup[i]];
+            }
+            sound.init();
+            sound.playTone(600, 'triangle', 0.15, 0.1);
+            
+            regeneratePlayersAndResults();
+            generateLadderStructure();
+            showStatus('멤버들의 출발 위치가 무작위로 변경되었습니다! 🎲', 'indigo');
+        });
+
+    </script>
+</body>
+</html>
